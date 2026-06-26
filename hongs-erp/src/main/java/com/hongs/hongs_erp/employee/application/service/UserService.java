@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 
 import com.hongs.hongs_erp.employee.application.dto.request.SignupCommand;
 import com.hongs.hongs_erp.employee.application.dto.response.SignupResponse;
-import com.hongs.hongs_erp.employee.application.port.input.SignupUseCase;
-import com.hongs.hongs_erp.employee.application.port.output.UserRepository;
+import com.hongs.hongs_erp.employee.application.port.in.SignupUseCase;
+import com.hongs.hongs_erp.employee.application.port.out.UserRepository;
 import com.hongs.hongs_erp.employee.domain.User;
 
 @Service

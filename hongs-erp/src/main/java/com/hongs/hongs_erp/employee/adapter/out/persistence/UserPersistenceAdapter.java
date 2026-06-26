@@ -1,8 +1,8 @@
-package com.hongs.hongs_erp.employee.application.infrastructure.persistence;
+package com.hongs.hongs_erp.employee.adapter.out.persistence;
 
 import org.springframework.stereotype.Repository;
 
-import com.hongs.hongs_erp.employee.application.port.output.UserRepository;
+import com.hongs.hongs_erp.employee.application.port.out.UserRepository;
 import com.hongs.hongs_erp.employee.domain.User;
 
 @Repository

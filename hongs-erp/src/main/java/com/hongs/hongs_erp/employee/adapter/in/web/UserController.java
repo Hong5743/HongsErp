@@ -1,4 +1,4 @@
-package com.hongs.hongs_erp.employee.application.infrastructure.web.controller;
+package com.hongs.hongs_erp.employee.adapter.in.web;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hongs.hongs_erp.employee.application.dto.request.SignupCommand;
 import com.hongs.hongs_erp.employee.application.dto.response.SignupResponse;
-import com.hongs.hongs_erp.employee.application.port.input.SignupUseCase;
+import com.hongs.hongs_erp.employee.application.port.in.SignupUseCase;
 
 @RestController
 @RequestMapping("/users")

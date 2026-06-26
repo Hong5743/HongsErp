@@ -1,4 +1,4 @@
-package com.hongs.hongs_erp.employee.application.infrastructure.persistence;
+package com.hongs.hongs_erp.employee.adapter.out.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
