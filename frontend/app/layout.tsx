@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "홍스 ERP",
@@ -15,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className="h-full">
       <body className="h-full antialiased">
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

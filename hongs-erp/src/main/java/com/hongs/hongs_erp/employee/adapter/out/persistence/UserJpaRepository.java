@@ -2,5 +2,9 @@ package com.hongs.hongs_erp.employee.adapter.out.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-interface UserJpaRepository extends JpaRepository<UserJpaEntity, String> {
+import java.util.Optional;
+
+interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
+    Optional<UserJpaEntity> findByEmail(String email);
+    boolean existsByEmail(String email);
 }
