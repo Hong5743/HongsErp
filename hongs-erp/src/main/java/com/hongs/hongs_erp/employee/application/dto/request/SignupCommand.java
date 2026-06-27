@@ -1,3 +1,5 @@
 package com.hongs.hongs_erp.employee.application.dto.request;
 
-public record SignupCommand(String id, String password, String userName) {}
+import com.hongs.hongs_erp.employee.domain.User;
+
+public record SignupCommand(String email, String password, String name, User.Role role) {}
