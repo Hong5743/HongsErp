@@ -3,6 +3,7 @@ package com.hongs.hongs_erp.employee.adapter.out.persistence;
 import com.hongs.hongs_erp.employee.application.port.out.UserRepository;
 import com.hongs.hongs_erp.employee.domain.User;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -38,5 +39,12 @@ public class UserPersistenceAdapter implements UserRepository {
     @Override
     public void update(User user) {
         userJpaRepository.save(UserJpaEntity.fromDomain(user));
+    }
+
+    @Override
+    @Transactional
+    public int incrementFailCountAndGet(Long userId) {
+        userJpaRepository.incrementFailCount(userId);
+        return userJpaRepository.findFailCountById(userId);
     }
 }

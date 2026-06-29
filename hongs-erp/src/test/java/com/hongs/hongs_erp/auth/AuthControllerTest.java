@@ -1,7 +1,6 @@
 package com.hongs.hongs_erp.auth;
 
 import tools.jackson.databind.ObjectMapper;
-import com.hongs.hongs_erp.auth.application.port.out.LoginFailPort;
 import com.hongs.hongs_erp.auth.application.port.out.RefreshTokenPort;
 import com.hongs.hongs_erp.auth.application.port.out.TokenBlacklistPort;
 import com.hongs.hongs_erp.employee.application.port.out.UserRepository;
@@ -9,6 +8,7 @@ import com.hongs.hongs_erp.employee.domain.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -51,8 +51,8 @@ class AuthControllerTest {
     @MockitoBean
     private RefreshTokenPort refreshTokenPort;
 
-    @MockitoBean
-    private LoginFailPort loginFailPort;
+    @Value("${auth.max-fail-count}")
+    private int maxFailCount;
 
     private static final String VALID_EMAIL = "test@hongs.com";
     private static final String VALID_PASSWORD = "Password1!";
@@ -60,7 +60,6 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         when(tokenBlacklistPort.isBlacklisted(anyString())).thenReturn(false);
-        when(loginFailPort.incrementAndGet(anyLong())).thenReturn(1);
         when(refreshTokenPort.findByUserId(anyLong())).thenReturn(Optional.empty());
     }
 
@@ -118,16 +117,20 @@ class AuthControllerTest {
     @Test
     void 로그인_5회_실패시_계정이_잠긴다() throws Exception {
         User user = User.create(VALID_EMAIL, passwordEncoder.encode(VALID_PASSWORD), "테스터", User.Role.EMPLOYEE);
-        userRepository.save(user);
+        User saved = userRepository.save(user);
 
-        when(loginFailPort.incrementAndGet(anyLong())).thenReturn(5);
+        // fail_count를 임계값 직전으로 세팅
+        for (int i = 0; i < maxFailCount - 1; i++) {
+            userRepository.incrementFailCountAndGet(saved.getId());
+        }
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("email", VALID_EMAIL, "password", "WrongPass1!"))))
                 .andExpect(status().isUnauthorized());
 
-        verify(loginFailPort).incrementAndGet(anyLong());
+        User locked = userRepository.findById(saved.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertTrue(locked.isLocked());
     }
 
     @Test
