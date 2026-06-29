@@ -11,10 +11,10 @@ interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
     Optional<UserJpaEntity> findByEmail(String email);
     boolean existsByEmail(String email);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE UserJpaEntity u SET u.failCount = u.failCount + 1 WHERE u.id = :id")
     void incrementFailCount(@Param("id") Long id);
 
     @Query("SELECT u.failCount FROM UserJpaEntity u WHERE u.id = :id")
-    int findFailCountById(@Param("id") Long id);
+    Integer findFailCountById(@Param("id") Long id);
 }

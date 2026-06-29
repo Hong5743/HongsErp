@@ -4,6 +4,7 @@ import com.hongs.hongs_erp.employee.application.dto.request.SignupCommand;
 import com.hongs.hongs_erp.employee.application.dto.response.SignupResponse;
 import com.hongs.hongs_erp.employee.application.port.in.SignupUseCase;
 import com.hongs.hongs_erp.employee.domain.User;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,7 +23,7 @@ public class UserController {
     }
 
     @PostMapping
-    public SignupResponse signup(@RequestBody SignupCommand signupCommand) {
+    public SignupResponse signup(@RequestBody @Valid SignupCommand signupCommand) {
         return signupUseCase.signup(signupCommand);
     }
 }

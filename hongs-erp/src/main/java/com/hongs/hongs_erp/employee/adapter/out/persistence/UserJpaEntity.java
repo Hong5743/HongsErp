@@ -14,6 +14,10 @@ public class UserJpaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -33,26 +37,39 @@ public class UserJpaEntity {
     @Column(name = "fail_count", nullable = false)
     private int failCount;
 
-    public UserJpaEntity(String email, String password, String name, User.Role role, boolean locked, int failCount) {
+    @Column(name = "department")
+    private String department;
+
+    public UserJpaEntity(String email, String password, String name, User.Role role, boolean locked, int failCount, String department) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.role = role;
         this.locked = locked;
         this.failCount = failCount;
+        this.department = department;
     }
 
     public User toDomain() {
-        return new User(id, email, password, name, role, locked, failCount);
+        return new User(id, email, password, name, role, locked, failCount, department);
     }
 
     static UserJpaEntity fromDomain(User user) {
         UserJpaEntity entity = new UserJpaEntity(
                 user.getEmail(), user.getPassword(), user.getName(),
-                user.getRole(), user.isLocked(), user.getFailCount()
+                user.getRole(), user.isLocked(), user.getFailCount(), user.getDepartment()
         );
         entity.id = user.getId();
         return entity;
+    }
+
+    void applyFrom(User user) {
+        this.name = user.getName();
+        this.role = user.getRole();
+        this.locked = user.isLocked();
+        this.failCount = user.getFailCount();
+        this.department = user.getDepartment();
+        this.password = user.getPassword();
     }
 
     Long getId() { return id; }
