@@ -9,6 +9,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,11 +24,20 @@ public class AuthController {
     private final LoginUseCase loginUseCase;
     private final LogoutUseCase logoutUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
+    private final int accessTokenMaxAge;
+    private final int refreshTokenMaxAge;
 
-    public AuthController(LoginUseCase loginUseCase, LogoutUseCase logoutUseCase, RefreshTokenUseCase refreshTokenUseCase) {
+    public AuthController(
+            LoginUseCase loginUseCase,
+            LogoutUseCase logoutUseCase,
+            RefreshTokenUseCase refreshTokenUseCase,
+            @Value("${jwt.access-token-expiry-seconds}") int accessTokenMaxAge,
+            @Value("${jwt.refresh-token-expiry-seconds}") int refreshTokenMaxAge) {
         this.loginUseCase = loginUseCase;
         this.logoutUseCase = logoutUseCase;
         this.refreshTokenUseCase = refreshTokenUseCase;
+        this.accessTokenMaxAge = accessTokenMaxAge;
+        this.refreshTokenMaxAge = refreshTokenMaxAge;
     }
 
     @PostMapping("/login")
@@ -67,7 +77,7 @@ public class AuthController {
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setAttribute("SameSite", "Strict");
-        cookie.setMaxAge(15 * 60);
+        cookie.setMaxAge(accessTokenMaxAge);
         response.addCookie(cookie);
     }
 
@@ -76,7 +86,7 @@ public class AuthController {
         cookie.setHttpOnly(true);
         cookie.setPath("/api/auth/refresh");
         cookie.setAttribute("SameSite", "Strict");
-        cookie.setMaxAge(7 * 24 * 60 * 60);
+        cookie.setMaxAge(refreshTokenMaxAge);
         response.addCookie(cookie);
     }
 
