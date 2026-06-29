@@ -34,18 +34,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         Optional<String> tokenOpt = extractTokenFromCookie(request);
+
         if (tokenOpt.isEmpty()) {
             chain.doFilter(request, response);
             return;
         }
 
         String token = tokenOpt.get();
+
         try {
             Claims claims = jwtTokenProvider.parseToken(token);
-            String jti = claims.getId();
 
-            boolean blacklisted = tokenBlacklistPort.isBlacklisted(jti);
-            if (blacklisted) {
+            if (tokenBlacklistPort.isBlacklisted(claims.getId())) {
                 sendUnauthorized(response);
                 return;
             }
@@ -61,6 +61,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             sendServiceUnavailable(response);
             return;
         } catch (JwtException | IllegalArgumentException e) {
+            sendUnauthorized(response);
+            return;
+        } catch (Exception e) {
             sendUnauthorized(response);
             return;
         }
