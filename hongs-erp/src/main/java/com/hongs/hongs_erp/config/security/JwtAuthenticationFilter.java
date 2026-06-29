@@ -1,8 +1,9 @@
 package com.hongs.hongs_erp.config.security;
 
+import com.hongs.hongs_erp.auth.application.port.out.ParsedToken;
 import com.hongs.hongs_erp.auth.application.port.out.TokenBlacklistPort;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
+import com.hongs.hongs_erp.auth.application.port.out.TokenPort;
+import com.hongs.hongs_erp.global.exception.AuthException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -21,11 +22,11 @@ import java.util.Optional;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenPort tokenPort;
     private final TokenBlacklistPort tokenBlacklistPort;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, TokenBlacklistPort tokenBlacklistPort) {
-        this.jwtTokenProvider = jwtTokenProvider;
+    public JwtAuthenticationFilter(TokenPort tokenPort, TokenBlacklistPort tokenBlacklistPort) {
+        this.tokenPort = tokenPort;
         this.tokenBlacklistPort = tokenBlacklistPort;
     }
 
@@ -43,24 +44,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = tokenOpt.get();
 
         try {
-            Claims claims = jwtTokenProvider.parseToken(token);
+            ParsedToken parsed = tokenPort.parseToken(token);
 
-            if (tokenBlacklistPort.isBlacklisted(claims.getId())) {
+            if (tokenBlacklistPort.isBlacklisted(parsed.tokenId())) {
                 sendUnauthorized(response);
                 return;
             }
 
-            String role = claims.get("role", String.class);
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    claims.getSubject(), null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                    parsed.subject(), null,
+                    List.of(new SimpleGrantedAuthority("ROLE_" + parsed.role()))
             );
             SecurityContextHolder.getContext().setAuthentication(auth);
 
         } catch (DataAccessException e) {
             sendServiceUnavailable(response);
             return;
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (AuthException e) {
             sendUnauthorized(response);
             return;
         } catch (Exception e) {
