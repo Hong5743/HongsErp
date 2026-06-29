@@ -5,14 +5,13 @@ import com.hongs.hongs_erp.auth.application.dto.response.TokenPair;
 import com.hongs.hongs_erp.auth.application.port.in.LoginUseCase;
 import com.hongs.hongs_erp.auth.application.port.in.LogoutUseCase;
 import com.hongs.hongs_erp.auth.application.port.in.RefreshTokenUseCase;
+import com.hongs.hongs_erp.auth.application.port.out.ParsedToken;
 import com.hongs.hongs_erp.auth.application.port.out.RefreshTokenPort;
 import com.hongs.hongs_erp.auth.application.port.out.TokenBlacklistPort;
-import com.hongs.hongs_erp.config.security.JwtTokenProvider;
+import com.hongs.hongs_erp.auth.application.port.out.TokenPort;
 import com.hongs.hongs_erp.employee.application.port.out.UserRepository;
 import com.hongs.hongs_erp.employee.domain.User;
 import com.hongs.hongs_erp.global.exception.AuthException;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,7 +23,7 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
     private static final String INVALID_CREDENTIALS = "이메일 또는 비밀번호가 올바르지 않습니다";
 
     private final UserRepository userRepository;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenPort tokenPort;
     private final PasswordEncoder passwordEncoder;
     private final TokenBlacklistPort tokenBlacklistPort;
     private final RefreshTokenPort refreshTokenPort;
@@ -33,14 +32,14 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
 
     public AuthService(
             UserRepository userRepository,
-            JwtTokenProvider jwtTokenProvider,
+            TokenPort tokenPort,
             PasswordEncoder passwordEncoder,
             TokenBlacklistPort tokenBlacklistPort,
             RefreshTokenPort refreshTokenPort,
             @Value("${auth.max-fail-count}") int maxFailCount,
             @Value("${auth.allowed-domains}") String allowedDomain) {
         this.userRepository = userRepository;
-        this.jwtTokenProvider = jwtTokenProvider;
+        this.tokenPort = tokenPort;
         this.passwordEncoder = passwordEncoder;
         this.tokenBlacklistPort = tokenBlacklistPort;
         this.refreshTokenPort = refreshTokenPort;
@@ -72,9 +71,9 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
 
         userRepository.update(user.resetFailCount());
 
-        String accessToken = jwtTokenProvider.createAccessToken(user);
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        refreshTokenPort.store(user.getId(), refreshToken, jwtTokenProvider.getRefreshTokenExpirySeconds());
+        String accessToken = tokenPort.createAccessToken(user);
+        String refreshToken = tokenPort.createRefreshToken(user.getId());
+        refreshTokenPort.store(user.getId(), refreshToken, tokenPort.getRefreshTokenExpirySeconds());
 
         return new TokenPair(accessToken, refreshToken);
     }
@@ -82,14 +81,13 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
     @Override
     public void logout(String accessToken) {
         try {
-            Claims claims = jwtTokenProvider.parseToken(accessToken);
-            long remainingSeconds = jwtTokenProvider.getRemainingSeconds(claims);
-            if (remainingSeconds > 0) {
-                tokenBlacklistPort.blacklist(claims.getId(), remainingSeconds);
+            ParsedToken parsed = tokenPort.parseToken(accessToken);
+            if (parsed.remainingSeconds() > 0) {
+                tokenBlacklistPort.blacklist(parsed.tokenId(), parsed.remainingSeconds());
             }
-            Long userId = Long.valueOf(claims.getSubject());
+            Long userId = Long.valueOf(parsed.subject());
             refreshTokenPort.delete(userId);
-        } catch (JwtException | IllegalArgumentException ignored) {
+        } catch (AuthException ignored) {
             // 이미 만료된 토큰은 블랙리스트 불필요
         }
     }
@@ -97,14 +95,14 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
     @Override
     @Transactional(noRollbackFor = AuthException.class)
     public TokenPair refresh(String oldRefreshToken) {
-        Claims claims;
+        ParsedToken parsed;
         try {
-            claims = jwtTokenProvider.parseToken(oldRefreshToken);
-        } catch (JwtException | IllegalArgumentException e) {
+            parsed = tokenPort.parseToken(oldRefreshToken);
+        } catch (AuthException e) {
             throw new AuthException("유효하지 않은 Refresh Token입니다", 401);
         }
 
-        Long userId = Long.valueOf(claims.getSubject());
+        Long userId = Long.valueOf(parsed.subject());
         String stored = refreshTokenPort.findByUserId(userId)
                 .orElseThrow(() -> new AuthException("유효하지 않은 Refresh Token입니다", 401));
 
@@ -124,9 +122,9 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
 
         refreshTokenPort.delete(userId);
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(user);
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
-        refreshTokenPort.store(userId, newRefreshToken, jwtTokenProvider.getRefreshTokenExpirySeconds());
+        String newAccessToken = tokenPort.createAccessToken(user);
+        String newRefreshToken = tokenPort.createRefreshToken(userId);
+        refreshTokenPort.store(userId, newRefreshToken, tokenPort.getRefreshTokenExpirySeconds());
 
         return new TokenPair(newAccessToken, newRefreshToken);
     }

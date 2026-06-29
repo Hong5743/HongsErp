@@ -1,8 +1,8 @@
 package com.hongs.hongs_erp.config;
 
 import com.hongs.hongs_erp.auth.application.port.out.TokenBlacklistPort;
+import com.hongs.hongs_erp.auth.application.port.out.TokenPort;
 import com.hongs.hongs_erp.config.security.JwtAuthenticationFilter;
-import com.hongs.hongs_erp.config.security.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,11 +26,11 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenPort tokenPort;
     private final TokenBlacklistPort tokenBlacklistPort;
 
-    public SecurityConfig(JwtTokenProvider jwtTokenProvider, TokenBlacklistPort tokenBlacklistPort) {
-        this.jwtTokenProvider = jwtTokenProvider;
+    public SecurityConfig(TokenPort tokenPort, TokenBlacklistPort tokenBlacklistPort) {
+        this.tokenPort = tokenPort;
         this.tokenBlacklistPort = tokenBlacklistPort;
     }
 
@@ -58,7 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, tokenBlacklistPort), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(tokenPort, tokenBlacklistPort), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

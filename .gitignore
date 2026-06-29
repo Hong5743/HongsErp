@@ -9,6 +9,12 @@
 .claude/
 .scratch/
 
+# 세션 핸드오프 (로컬 전용)
+docs/handoff/
+
+# 로그
+*.log
+
 # OS
 .DS_Store
 Thumbs.db

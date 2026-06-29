@@ -1,7 +1,12 @@
-package com.hongs.hongs_erp.config.security;
+package com.hongs.hongs_erp.auth.adapter.out.jwt;
 
+import com.hongs.hongs_erp.auth.application.port.out.ParsedToken;
+import com.hongs.hongs_erp.auth.application.port.out.TokenPort;
 import com.hongs.hongs_erp.employee.domain.User;
-import io.jsonwebtoken.*;
+import com.hongs.hongs_erp.global.exception.AuthException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -13,13 +18,13 @@ import java.util.Date;
 import java.util.UUID;
 
 @Component
-public class JwtTokenProvider {
+public class JwtTokenAdapter implements TokenPort {
 
     private final SecretKey signingKey;
     private final long accessTokenExpirySeconds;
     private final long refreshTokenExpirySeconds;
 
-    public JwtTokenProvider(
+    public JwtTokenAdapter(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiry-seconds}") long accessTokenExpirySeconds,
             @Value("${jwt.refresh-token-expiry-seconds}") long refreshTokenExpirySeconds) {
@@ -28,6 +33,7 @@ public class JwtTokenProvider {
         this.refreshTokenExpirySeconds = refreshTokenExpirySeconds;
     }
 
+    @Override
     public String createAccessToken(User user) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -41,6 +47,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    @Override
     public String createRefreshToken(Long userId) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -52,20 +59,27 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public Claims parseToken(String token) {
-        return Jwts.parser()
-                .verifyWith(signingKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    @Override
+    public ParsedToken parseToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            long remainingMs = claims.getExpiration().getTime() - System.currentTimeMillis();
+            return new ParsedToken(
+                    claims.getId(),
+                    claims.getSubject(),
+                    claims.get("role", String.class),
+                    Math.max(remainingMs / 1000, 0)
+            );
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new AuthException("유효하지 않은 토큰입니다", 401);
+        }
     }
 
-    public long getRemainingSeconds(Claims claims) {
-        long expiryMs = claims.getExpiration().getTime();
-        long remainingMs = expiryMs - System.currentTimeMillis();
-        return Math.max(remainingMs / 1000, 0);
-    }
-
+    @Override
     public long getRefreshTokenExpirySeconds() {
         return refreshTokenExpirySeconds;
     }
