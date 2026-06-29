@@ -15,6 +15,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -76,6 +77,21 @@ public class JwtTokenAdapter implements TokenPort {
             );
         } catch (JwtException | IllegalArgumentException e) {
             throw new AuthException("유효하지 않은 토큰입니다", 401);
+        }
+    }
+
+    @Override
+    public Optional<String> parseSubjectIgnoreExpiry(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .clockSkewSeconds(Integer.MAX_VALUE)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return Optional.ofNullable(claims.getSubject());
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
         }
     }
 

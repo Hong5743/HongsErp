@@ -2,6 +2,7 @@ package com.hongs.hongs_erp.employee.application.port.out;
 
 import com.hongs.hongs_erp.employee.domain.User;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository {
@@ -11,4 +12,5 @@ public interface UserRepository {
     boolean existsByEmail(String email);
     void update(User user);
     int incrementFailCountAndGet(Long userId);
+    List<User> findAll();
 }

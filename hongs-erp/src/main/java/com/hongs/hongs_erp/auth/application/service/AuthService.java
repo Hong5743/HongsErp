@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUseCase {
 
@@ -80,15 +82,29 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
 
     @Override
     public void logout(String accessToken) {
+        Long userId = null;
         try {
             ParsedToken parsed = tokenPort.parseToken(accessToken);
             if (parsed.remainingSeconds() > 0) {
                 tokenBlacklistPort.blacklist(parsed.tokenId(), parsed.remainingSeconds());
             }
-            Long userId = Long.valueOf(parsed.subject());
-            refreshTokenPort.delete(userId);
+            userId = Long.valueOf(parsed.subject());
         } catch (AuthException ignored) {
-            // 이미 만료된 토큰은 블랙리스트 불필요
+            // 만료된 토큰은 블랙리스트 불필요, subject만 추출
+            userId = tokenPort.parseSubjectIgnoreExpiry(accessToken)
+                    .flatMap(s -> {
+                        try {
+                            return Optional.of(Long.valueOf(s));
+                        } catch (NumberFormatException e) {
+                            return Optional.empty();
+                        }
+                    })
+                    .orElse(null);
+        } catch (NumberFormatException ignored) {
+            // 변조된 토큰의 subject가 숫자가 아님
+        }
+        if (userId != null) {
+            refreshTokenPort.delete(userId);
         }
     }
 

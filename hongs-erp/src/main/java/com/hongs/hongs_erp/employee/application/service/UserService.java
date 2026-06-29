@@ -4,6 +4,7 @@ import com.hongs.hongs_erp.employee.application.dto.request.SignupCommand;
 import com.hongs.hongs_erp.employee.application.dto.response.EmployeeResponse;
 import com.hongs.hongs_erp.employee.application.dto.response.SignupResponse;
 import com.hongs.hongs_erp.employee.application.port.in.CreateEmployeeUseCase;
+import com.hongs.hongs_erp.employee.application.port.in.ListEmployeesUseCase;
 import com.hongs.hongs_erp.employee.application.port.in.SignupUseCase;
 import com.hongs.hongs_erp.employee.application.port.in.UnlockEmployeeUseCase;
 import com.hongs.hongs_erp.employee.application.port.out.UserRepository;
@@ -12,8 +13,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
-public class UserService implements SignupUseCase, CreateEmployeeUseCase, UnlockEmployeeUseCase {
+public class UserService implements SignupUseCase, CreateEmployeeUseCase, UnlockEmployeeUseCase, ListEmployeesUseCase {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -41,7 +44,15 @@ public class UserService implements SignupUseCase, CreateEmployeeUseCase, Unlock
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다");
         }
         String encoded = passwordEncoder.encode(command.password());
-        return userRepository.save(User.create(command.email(), encoded, command.name(), command.role()));
+        return userRepository.save(User.create(command.email(), encoded, command.name(), command.role(), command.department()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmployeeResponse> listEmployees() {
+        return userRepository.findAll().stream()
+                .map(EmployeeResponse::from)
+                .toList();
     }
 
     @Override
