@@ -1,6 +1,5 @@
 package com.hongs.hongs_erp.auth.adapter.out.redis;
 
-import com.hongs.hongs_erp.auth.application.port.out.LoginFailPort;
 import com.hongs.hongs_erp.auth.application.port.out.RefreshTokenPort;
 import com.hongs.hongs_erp.auth.application.port.out.TokenBlacklistPort;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -10,11 +9,10 @@ import java.time.Duration;
 import java.util.Optional;
 
 @Component
-public class RedisTokenAdapter implements TokenBlacklistPort, RefreshTokenPort, LoginFailPort {
+public class RedisTokenAdapter implements TokenBlacklistPort, RefreshTokenPort {
 
     private static final String BLACKLIST_KEY = "auth:blacklist:";
     private static final String REFRESH_KEY = "auth:refresh:";
-    private static final String LOGIN_FAIL_KEY = "auth:login-fail:";
 
     private final StringRedisTemplate redisTemplate;
 
@@ -45,16 +43,5 @@ public class RedisTokenAdapter implements TokenBlacklistPort, RefreshTokenPort, 
     @Override
     public void delete(Long userId) {
         redisTemplate.delete(REFRESH_KEY + userId);
-    }
-
-    @Override
-    public int incrementAndGet(Long userId) {
-        Long count = redisTemplate.opsForValue().increment(LOGIN_FAIL_KEY + userId);
-        return count == null ? 1 : count.intValue();
-    }
-
-    @Override
-    public void reset(Long userId) {
-        redisTemplate.delete(LOGIN_FAIL_KEY + userId);
     }
 }

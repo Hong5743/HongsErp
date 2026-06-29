@@ -5,7 +5,6 @@ import com.hongs.hongs_erp.auth.application.dto.response.TokenPair;
 import com.hongs.hongs_erp.auth.application.port.in.LoginUseCase;
 import com.hongs.hongs_erp.auth.application.port.in.LogoutUseCase;
 import com.hongs.hongs_erp.auth.application.port.in.RefreshTokenUseCase;
-import com.hongs.hongs_erp.auth.application.port.out.LoginFailPort;
 import com.hongs.hongs_erp.auth.application.port.out.RefreshTokenPort;
 import com.hongs.hongs_erp.auth.application.port.out.TokenBlacklistPort;
 import com.hongs.hongs_erp.config.security.JwtTokenProvider;
@@ -29,7 +28,6 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
     private final PasswordEncoder passwordEncoder;
     private final TokenBlacklistPort tokenBlacklistPort;
     private final RefreshTokenPort refreshTokenPort;
-    private final LoginFailPort loginFailPort;
     private final int maxFailCount;
     private final String allowedDomain;
 
@@ -39,7 +37,6 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
             PasswordEncoder passwordEncoder,
             TokenBlacklistPort tokenBlacklistPort,
             RefreshTokenPort refreshTokenPort,
-            LoginFailPort loginFailPort,
             @Value("${auth.max-fail-count}") int maxFailCount,
             @Value("${auth.allowed-domains}") String allowedDomain) {
         this.userRepository = userRepository;
@@ -47,7 +44,6 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
         this.passwordEncoder = passwordEncoder;
         this.tokenBlacklistPort = tokenBlacklistPort;
         this.refreshTokenPort = refreshTokenPort;
-        this.loginFailPort = loginFailPort;
         this.maxFailCount = maxFailCount;
         this.allowedDomain = allowedDomain;
     }
@@ -65,14 +61,16 @@ public class AuthService implements LoginUseCase, LogoutUseCase, RefreshTokenUse
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            int failCount = loginFailPort.incrementAndGet(user.getId());
-            if (failCount >= maxFailCount) {
-                userRepository.update(user.lock());
+            int newFailCount = userRepository.incrementFailCountAndGet(user.getId());
+            if (newFailCount >= maxFailCount) {
+                User freshUser = userRepository.findById(user.getId())
+                        .orElseThrow(() -> new AuthException(INVALID_CREDENTIALS, 401));
+                userRepository.update(freshUser.lock());
             }
             throw new AuthException(INVALID_CREDENTIALS, 401);
         }
 
-        loginFailPort.reset(user.getId());
+        userRepository.update(user.resetFailCount());
 
         String accessToken = jwtTokenProvider.createAccessToken(user);
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
