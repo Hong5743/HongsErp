@@ -9,8 +9,8 @@
 .claude/
 .scratch/
 
-# 세션 핸드오프 (로컬 전용)
-docs/handoff/
+# 문서 (로컬 전용)
+docs/
 
 # 로그
 *.log
