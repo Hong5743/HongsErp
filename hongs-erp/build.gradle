@@ -66,6 +66,9 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testRuntimeOnly 'com.h2database:h2'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	implementation platform('software.amazon.awssdk:bom:2.30.31')
+	implementation 'software.amazon.awssdk:s3'
 }
 
 bootRun {
