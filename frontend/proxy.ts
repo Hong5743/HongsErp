@@ -12,6 +12,9 @@ export function proxy(request: NextRequest) {
 
   const hasAccessToken = request.cookies.has('access_token');
   if (!hasAccessToken) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ message: '인증이 필요합니다' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);

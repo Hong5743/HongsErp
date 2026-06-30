@@ -1,6 +1,7 @@
 package com.hongs.hongs_erp.posheet.adapter.out.storage;
 
 import com.hongs.hongs_erp.posheet.application.port.out.StoragePort;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -20,6 +21,15 @@ public class S3StorageAdapter implements StoragePort {
 
     public S3StorageAdapter(S3Client s3, S3Presigner presigner) {
         this.s3 = s3; this.presigner = presigner;
+    }
+
+    @PostConstruct
+    public void ensureBucketExists() {
+        try {
+            s3.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+        } catch (NoSuchBucketException e) {
+            s3.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+        }
     }
 
     @Override

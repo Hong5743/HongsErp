@@ -7,6 +7,10 @@ const BASE = '/api';
 
 async function req<T>(input: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + input, { credentials: 'include', ...init });
+  if (res.status === 401) {
+    window.location.href = `/login?from=${encodeURIComponent(window.location.pathname)}`;
+    throw new Error('인증이 필요합니다');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message ?? res.statusText);

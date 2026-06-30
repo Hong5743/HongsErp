@@ -12,6 +12,7 @@ const navItems = [
   { href: '/settlement', label: '정산 관리', icon: '💰' },
   { href: '/leave', label: '연차 관리', icon: '📅' },
   { href: '/notifications', label: '알림', icon: '🔔' },
+  { href: '/posheet', label: 'PO Sheet', icon: '📋' },
 ];
 
 interface SidebarProps {

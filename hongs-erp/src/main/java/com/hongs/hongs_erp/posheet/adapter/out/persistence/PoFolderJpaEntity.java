@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "ps_folders", indexes = {
     @Index(name = "idx_psf_parent", columnList = "parent_id"),
-    @Index(name = "idx_psf_path",   columnList = "path"),
     @Index(name = "idx_psf_trash",  columnList = "deleted_at,purge_at")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
